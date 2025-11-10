@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Dunia - Simulasi Kehidupan TRNG</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        h1 { color: #5a2a88; }
+        #status-display { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa; }
+        #status-display p { margin: 8px 0; font-size: 1.1em; }
+        #event-log { margin-top: 20px; font-style: italic; color: #666; min-height: 40px; }
+        .controls button { background-color: #7d3ac1; color: white; border: none; padding: 12px 25px; border-radius: 5px; font-size: 1em; cursor: pointer; transition: background-color 0.3s; margin: 5px; }
+        .controls button:hover { background-color: #5a2a88; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Game Dunia</h1>
+    <p>Tentukan hidupmu, tetapi takdir di tangan Tuhan (Sistem TRNG).</p>
+
+    <div id="status-display" class="hidden">
+        <h3>Status Pemain</h3>
+        <p>❤️ Kesihatan: <span id="health"></span></p>
+        <p>💰 Kekayaan: <span id="wealth"></span></p>
+        <p>😊 Kebahagiaan: <span id="happiness"></span></p>
+    </div>
+
+    <div id="event-log">
+        <p>Sila mulakan permainan baru.</p>
+    </div>
+
+    <div id="game-message" style="color: red; font-weight: bold; min-height: 25px;"></div>
+
+    <div class="controls">
+        <button id="start-btn">Mula Permainan Baru</button>
+        <button id="next-turn-btn" class="hidden">Pusingan Seterusnya</button>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://127.0.0.1:5001';
+
+    const startBtn = document.getElementById('start-btn');
+    const nextTurnBtn = document.getElementById('next-turn-btn');
+    const statusDisplay = document.getElementById('status-display');
+    const eventLog = document.getElementById('event-log');
+    const gameMessage = document.getElementById('game-message');
+
+    // UI Update Function
+    function updateStatus(status) {
+        document.getElementById('health').textContent = status.health;
+        document.getElementById('wealth').textContent = status.wealth.toLocaleString('en-US');
+        document.getElementById('happiness').textContent = status.happiness;
+    }
+
+    // Start Game
+    startBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/start`, { method: 'POST' });
+            const data = await response.json();
+
+            if (response.ok) {
+                updateStatus(data.player_status);
+                eventLog.innerHTML = `<p>${data.message}</p>`;
+                gameMessage.textContent = '';
+                statusDisplay.classList.remove('hidden');
+                nextTurnBtn.classList.remove('hidden');
+                startBtn.textContent = 'Mula Semula'; // Change text after first start
+            } else {
+                eventLog.innerHTML = `<p>Error: ${data.error}</p>`;
+            }
+        } catch (error) {
+            eventLog.innerHTML = `<p>Tidak dapat menyambung ke server. Pastikan server sedang berjalan.</p>`;
+            console.error('Error starting game:', error);
+        }
+    });
+
+    // Next Turn
+    nextTurnBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/next_turn`, { method: 'POST' });
+            const data = await response.json();
+
+            if (response.ok) {
+                updateStatus(data.player_status);
+                eventLog.innerHTML = `<p>${data.event_description}</p>`;
+
+                if (data.message) {
+                    gameMessage.textContent = data.message;
+                    nextTurnBtn.classList.add('hidden'); // Hide next turn on game over
+                } else {
+                    gameMessage.textContent = '';
+                }
+            } else {
+                eventLog.innerHTML = `<p>Error: ${data.error}</p>`;
+            }
+        } catch (error) {
+            eventLog.innerHTML = `<p>Tidak dapat menyambung ke server.</p>`;
+            console.error('Error on next turn:', error);
+        }
+    });
+</script>
+
+</body>
+</html>

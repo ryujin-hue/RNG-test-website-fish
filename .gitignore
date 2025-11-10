@@ -1,0 +1,32 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment directories
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Log files
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project-specific ignores
+cookies.txt
+flask_server.log
+/home/jules/verification/

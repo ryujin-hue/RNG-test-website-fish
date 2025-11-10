@@ -1,0 +1,66 @@
+{
+  "player_attributes": {
+    "initial_values": {
+      "health": 100,
+      "wealth": 1000,
+      "happiness": 50
+    },
+    "max_values": {
+      "health": 100,
+      "happiness": 100
+    }
+  },
+  "random_events": [
+    {
+      "event_id": "LUCKY_FIND",
+      "description": "Anda terjumpa dompet di jalanan!",
+      "effects": {
+        "wealth": 500,
+        "happiness": 10
+      },
+      "probability_weight": 5
+    },
+    {
+      "event_id": "WIN_LOTTERY",
+      "description": "Tiket loteri anda memenangi hadiah utama!",
+      "effects": {
+        "wealth": 10000,
+        "happiness": 50
+      },
+      "probability_weight": 1
+    },
+    {
+      "event_id": "MINOR_ILLNESS",
+      "description": "Anda dijangkiti selesema biasa.",
+      "effects": {
+        "health": -10,
+        "happiness": -5
+      },
+      "probability_weight": 15
+    },
+    {
+      "event_id": "GET_PROMOTION",
+      "description": "Kerja keras anda membuahkan hasil, anda dinaikkan pangkat!",
+      "effects": {
+        "wealth": 2000,
+        "happiness": 20
+      },
+      "probability_weight": 3
+    },
+    {
+      "event_id": "STOCK_MARKET_CRASH",
+      "description": "Pasaran saham merudum, nilai pelaburan anda jatuh.",
+      "effects": {
+        "wealth": -1500,
+        "happiness": -15
+      },
+      "probability_weight": 2
+    },
+    {
+      "event_id": "A_NORMAL_DAY",
+      "description": "Tiada apa-apa yang luar biasa berlaku hari ini.",
+      "effects": {},
+      "probability_weight": 50
+    }
+  ]
+}
