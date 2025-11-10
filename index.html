@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Dunia - Simulasi Kehidupan TRNG</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px 0; }
         .container { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
         h1 { color: #5a2a88; }
         #status-display { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa; }
         #status-display p { margin: 8px 0; font-size: 1.1em; }
-        #event-log { margin-top: 20px; font-style: italic; color: #666; min-height: 40px; }
-        .controls button { background-color: #7d3ac1; color: white; border: none; padding: 12px 25px; border-radius: 5px; font-size: 1em; cursor: pointer; transition: background-color 0.3s; margin: 5px; }
-        .controls button:hover { background-color: #5a2a88; }
+        #event-log { margin-top: 20px; color: #666; min-height: 60px; }
+        #event-log p { margin: 5px 0; }
+        #actions-container button { background-color: #7d3ac1; color: white; border: none; padding: 12px 20px; border-radius: 5px; font-size: 1em; cursor: pointer; transition: background-color 0.3s; margin: 5px; }
+        #actions-container button:hover { background-color: #5a2a88; }
+        #actions-container button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #start-btn { background-color: #28a745; color: white; padding: 12px 25px; }
+        #start-btn:hover { background-color: #218838; }
         .hidden { display: none; }
     </style>
 </head>
@@ -20,7 +24,7 @@
 
 <div class="container">
     <h1>Game Dunia</h1>
-    <p>Tentukan hidupmu, tetapi takdir di tangan Tuhan (Sistem TRNG).</p>
+    <p>Pilih tindakanmu, dan lihat bagaimana takdir (Sistem TRNG) bertindak balas.</p>
 
     <div id="status-display" class="hidden">
         <h3>Status Pemain</h3>
@@ -37,7 +41,9 @@
 
     <div class="controls">
         <button id="start-btn">Mula Permainan Baru</button>
-        <button id="next-turn-btn" class="hidden">Pusingan Seterusnya</button>
+        <div id="actions-container" class="hidden" style="margin-top: 15px;">
+            <!-- Player action buttons will be inserted here by JavaScript -->
+        </div>
     </div>
 </div>
 
@@ -45,16 +51,68 @@
     const API_BASE_URL = 'http://127.0.0.1:5001';
 
     const startBtn = document.getElementById('start-btn');
-    const nextTurnBtn = document.getElementById('next-turn-btn');
     const statusDisplay = document.getElementById('status-display');
     const eventLog = document.getElementById('event-log');
     const gameMessage = document.getElementById('game-message');
+    const actionsContainer = document.getElementById('actions-container');
 
     // UI Update Function
     function updateStatus(status) {
         document.getElementById('health').textContent = status.health;
         document.getElementById('wealth').textContent = status.wealth.toLocaleString('en-US');
         document.getElementById('happiness').textContent = status.happiness;
+    }
+
+    // Fetch and display player actions
+    async function loadActions() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/actions`);
+            const actions = await response.json();
+
+            actionsContainer.innerHTML = ''; // Clear previous actions
+            actions.forEach(action => {
+                const button = document.createElement('button');
+                button.textContent = action.description;
+                button.dataset.actionId = action.action_id;
+                button.addEventListener('click', handleActionClick);
+                actionsContainer.appendChild(button);
+            });
+        } catch (error) {
+            console.error('Error loading actions:', error);
+            eventLog.innerHTML = `<p>Gagal memuatkan tindakan pemain.</p>`;
+        }
+    }
+
+    // Handle action button click
+    async function handleActionClick(event) {
+        const actionId = event.target.dataset.actionId;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/perform_action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action_id: actionId })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                updateStatus(data.player_status);
+                eventLog.innerHTML = `<p><strong>Tindakan Anda:</strong> ${data.action_description}</p><p><strong>Takdir Berkata:</strong> ${data.event_description}</p>`;
+
+                if (data.message) {
+                    gameMessage.textContent = data.message;
+                    // Disable action buttons on game over
+                    document.querySelectorAll('#actions-container button').forEach(btn => btn.disabled = true);
+                } else {
+                    gameMessage.textContent = '';
+                }
+            } else {
+                eventLog.innerHTML = `<p>Error: ${data.error}</p>`;
+            }
+        } catch (error) {
+            eventLog.innerHTML = `<p>Tidak dapat menyambung ke server.</p>`;
+            console.error('Error performing action:', error);
+        }
     }
 
     // Start Game
@@ -67,40 +125,18 @@
                 updateStatus(data.player_status);
                 eventLog.innerHTML = `<p>${data.message}</p>`;
                 gameMessage.textContent = '';
+
                 statusDisplay.classList.remove('hidden');
-                nextTurnBtn.classList.remove('hidden');
-                startBtn.textContent = 'Mula Semula'; // Change text after first start
+                actionsContainer.classList.remove('hidden');
+
+                await loadActions(); // Load actions after starting
+                startBtn.textContent = 'Mula Semula';
             } else {
                 eventLog.innerHTML = `<p>Error: ${data.error}</p>`;
             }
         } catch (error) {
             eventLog.innerHTML = `<p>Tidak dapat menyambung ke server. Pastikan server sedang berjalan.</p>`;
             console.error('Error starting game:', error);
-        }
-    });
-
-    // Next Turn
-    nextTurnBtn.addEventListener('click', async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/next_turn`, { method: 'POST' });
-            const data = await response.json();
-
-            if (response.ok) {
-                updateStatus(data.player_status);
-                eventLog.innerHTML = `<p>${data.event_description}</p>`;
-
-                if (data.message) {
-                    gameMessage.textContent = data.message;
-                    nextTurnBtn.classList.add('hidden'); // Hide next turn on game over
-                } else {
-                    gameMessage.textContent = '';
-                }
-            } else {
-                eventLog.innerHTML = `<p>Error: ${data.error}</p>`;
-            }
-        } catch (error) {
-            eventLog.innerHTML = `<p>Tidak dapat menyambung ke server.</p>`;
-            console.error('Error on next turn:', error);
         }
     });
 </script>
